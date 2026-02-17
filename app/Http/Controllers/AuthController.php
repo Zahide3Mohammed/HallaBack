@@ -13,7 +13,7 @@ class AuthController extends Controller
         $request->validate([
             'nom' => 'required|string|max:255',
             'prenom' => 'required|string|max:255',
-            'age' => 'required|integer',
+            'age' => 'required|date',
             'paye' => 'required|string|max:255',
             'sexe' => 'required|string|max:10',
             'email' => 'required|email|unique:users,email',
@@ -35,8 +35,12 @@ class AuthController extends Controller
         if ($request->hasFile('photo')) {
             $file = $request->file('photo');
             $filename = time().'_'.$file->getClientOriginalName();
+
+            // store image
             $file->storeAs('public/photos', $filename);
-            $user->photo = $filename;
+
+            // save path relative to storage
+            $user->photo = 'photos/'.$filename;
         }
 
         $user->save();
