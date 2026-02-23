@@ -4,7 +4,12 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\User;
+
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
+
+
 
 class AuthController extends Controller
 {
@@ -37,7 +42,9 @@ class AuthController extends Controller
             $filename = time().'_'.$file->getClientOriginalName();
 
             // store image
-            $file->storeAs('public/photos', $filename);
+           
+            $file->storeAs('photos', $filename, 'public');
+
 
             // save path relative to storage
             $user->photo = 'photos/'.$filename;
@@ -51,6 +58,7 @@ class AuthController extends Controller
          'token' => $token
          ]);
     }
+    // controler de login
     public function login(Request $request)
     {
         $user = User::where('email', $request->email)->first();
@@ -68,7 +76,7 @@ class AuthController extends Controller
             'token' => $token
         ]);
     }
-
+// controler de checkEmail
     public function checkEmail(Request $request)
     {
         // 1. Dir validation 3la l-format dyal l-email
@@ -84,6 +92,7 @@ class AuthController extends Controller
             'message' => $exists ? 'Email déjà utilisé' : 'Email disponible'
         ]);
     }
+   //  
     public function personalitytest(Request $request)
 {
     // 1. جيب المستخدم اللي صيفط الطوكن
@@ -111,6 +120,60 @@ class AuthController extends Controller
     return response()->json(['message' => 'Error saving data'], 500);
 }
 
- 
+// controller changePassword
+ public function changePassword(Request $request)
+    {
+        try {
+            // الـ Validation بطريقة كتمنع الـ Redirect الـتلقائي
+            $validator = Validator::make($request->all(), [
+                'current_password' => 'required',
+                'new_password' => ['required', 'min:8', 'regex:/[A-Z]/', 'regex:/[0-9]/', 'confirmed']
+            ]);
 
+            if ($validator->fails()) {
+                return response()->json(['errors' => $validator->errors()], 422);
+            }
+
+            $user = $request->user();
+
+            if (!Hash::check($request->current_password, $user->password)) {
+                return response()->json(['message' => 'Le mot de passe actuel est incorrect'], 422);
+            }
+
+            $user->password = Hash::make($request->new_password);
+            $user->save();
+
+            return response()->json(['message' => 'Password changé avec succès']);
+
+        } catch (\Exception $e) {
+            // هادي غتوري ليك الـ Error الحقيقي فـ React يلا وقع مشكل فالسيرفر
+            return response()->json(['message' => 'Server Error: ' . $e->getMessage()], 500);
+        }
+    }
+   
+// controller  de suppremer compter 
+public function deleteAccount(Request $request)
+{
+    $request->validate([
+        'password' => 'required'
+    ]);
+
+    $user = $request->user();
+
+    if (!Hash::check($request->password, $user->password)) {
+        return response()->json([
+            'message' => 'Password incorrect'
+        ], 401);
+    }
+
+    if ($user->photo) {
+        \Storage::disk('public')->delete($user->photo);
+    }
+
+    $user->delete();
+
+    return response()->json([
+        'message' => 'Account deleted successfully'
+    ]);
 }
+    }
