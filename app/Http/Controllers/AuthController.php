@@ -4,9 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\User;
-
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 
 
@@ -151,29 +150,29 @@ class AuthController extends Controller
         }
     }
    
-// controller  de suppremer compter 
-public function deleteAccount(Request $request)
-{
-    $request->validate([
-        'password' => 'required'
-    ]);
+        // controller  de suppremer compter 
+        public function deleteAccount(Request $request)
+        {
+            $request->validate([
+                'password' => 'required'
+            ]);
 
-    $user = $request->user();
+            $user = $request->user();
 
-    if (!Hash::check($request->password, $user->password)) {
-        return response()->json([
-            'message' => 'Password incorrect'
-        ], 401);
-    }
+            if (!Hash::check($request->password, $user->password)) {
+                return response()->json([
+                    'message' => 'Password incorrect'
+                ], 401);
+            }
 
-    if ($user->photo) {
-        \Storage::disk('public')->delete($user->photo);
-    }
+            if ($user->photo) {
+                Storage::disk('public')->delete($user->photo);
+            }
 
-    $user->delete();
+            $user->delete();
 
-    return response()->json([
-        'message' => 'Account deleted successfully'
-    ]);
-}
+            return response()->json([
+                'message' => 'Account deleted successfully'
+            ]);
+        }
     }
